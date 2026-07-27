@@ -89,6 +89,13 @@
   }
   .toggle-btn.active-yes{border-color:var(--success); background:var(--success-bg); color:#9FE0B8;}
   .toggle-btn.active-no{border-color:var(--danger); background:var(--danger-bg); color:#F2A6A0;}
+  .checkbox-card{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:16px 8px;
+    border-radius:10px; border:2px solid var(--line); background:var(--bg-panel-2); cursor:pointer;
+    font-size:15px; font-weight:600; color:var(--text-2);
+  }
+  .checkbox-card input{width:18px; height:18px; accent-color:var(--amber); cursor:pointer;}
+  .checkbox-card:has(input:checked), .checkbox-card.marcado{border-color:var(--amber); background:rgba(238,77,45,0.12); color:var(--amber);}
   .big-btn{
     width:100%; padding:18px; border-radius:12px; border:none; background:var(--amber); color:var(--amber-text);
     font-family:'Oswald',sans-serif; font-size:17px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase;
@@ -296,19 +303,54 @@
         <label for="itensCarregandoSelect">Motorista no pátio</label>
         <select id="itensCarregandoSelect" onchange="carregarItensCarregandoFormulario()"></select>
       </div>
-      <div class="row2">
-        <div class="field">
-          <label for="itemCarregandoManga">Manga <span class="opt-tag">quantidade</span></label>
-          <input type="number" id="itemCarregandoManga" min="0" placeholder="0">
-        </div>
-        <div class="field">
-          <label for="itemCarregandoTampa">Tampa <span class="opt-tag">quantidade</span></label>
-          <input type="number" id="itemCarregandoTampa" min="0" placeholder="0">
-        </div>
+      <div class="field">
+        <label for="itemCarregandoManga">Manga <span class="opt-tag">quantidade</span></label>
+        <input type="number" id="itemCarregandoManga" min="0" placeholder="0">
       </div>
       <div class="field">
         <label for="itemCarregandoDevices">Devices <span class="opt-tag">quantidade</span></label>
         <input type="number" id="itemCarregandoDevices" min="0" placeholder="0">
+      </div>
+      <div class="field">
+        <label>Destinos carregados</label>
+        <div class="toggle-group" style="flex-wrap:wrap;">
+          <label class="checkbox-card" id="checkDestinoPELabel" style="min-width:70px;">
+            <input type="checkbox" class="destino-check" value="PE" onchange="marcarDestino(this)">
+            <span>PE</span>
+          </label>
+          <label class="checkbox-card" id="checkDestinoRSLabel" style="min-width:70px;">
+            <input type="checkbox" class="destino-check" value="RS" onchange="marcarDestino(this)">
+            <span>RS</span>
+          </label>
+          <label class="checkbox-card" id="checkDestinoGOLabel" style="min-width:70px;">
+            <input type="checkbox" class="destino-check" value="GO" onchange="marcarDestino(this)">
+            <span>GO</span>
+          </label>
+          <label class="checkbox-card" id="checkDestinoFRANCOLabel" style="min-width:70px;">
+            <input type="checkbox" class="destino-check" value="FRANCO" onchange="marcarDestino(this)">
+            <span>FRANCO</span>
+          </label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Marcação da carga</label>
+        <div class="toggle-group">
+          <label class="checkbox-card" id="checkCrossLabel">
+            <input type="checkbox" id="itemCarregandoCross" onchange="document.getElementById('checkCrossLabel').classList.toggle('marcado', this.checked)">
+            <span>CROSS</span>
+          </label>
+          <label class="checkbox-card" id="checkPutawayLabel">
+            <input type="checkbox" id="itemCarregandoPutaway" onchange="document.getElementById('checkPutawayLabel').classList.toggle('marcado', this.checked)">
+            <span>PUTAWAY</span>
+          </label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Tem HV?</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" id="btnHvSim" onclick="setHv(true)">Sim</button>
+          <button type="button" class="toggle-btn" id="btnHvNao" onclick="setHv(false)">Não</button>
+        </div>
       </div>
       <button class="big-btn" onclick="salvarItensCarregando()">Salvar itens</button>
     </div>
@@ -394,7 +436,7 @@
             <th>Chegada</th><th>Placa</th><th>Nome</th><th>Hora Cheg.</th><th>Carregado</th><th>Doca</th>
             <th>Saída</th><th>Hora Saída</th><th>Liberado</th><th>Situação</th>
             <th>Manga (chegou)</th><th>Tampa (chegou)</th><th>Devices (chegou)</th>
-            <th>Manga (carregando)</th><th>Tampa (carregando)</th><th>Devices (carregando)</th>
+            <th>Manga (carregando)</th><th>Destinos (carregando)</th><th>Devices (carregando)</th><th>Cross</th><th>Putaway</th><th>HV</th>
             <th>Responsável</th><th>Obs. Chegada</th><th>Obs. Saída</th><th>Status</th><th>Ações</th>
           </tr>
         </thead>
@@ -455,6 +497,7 @@ checarLogin();
 
 let carregadoAtual = null;
 let liberadoAtual = null;
+let hvAtual = null;
 let listaHistoricoAtual = [];
 const STORAGE_KEY = 'driver-log:entries';
 
@@ -538,6 +581,17 @@ function setLiberado(val){
   liberadoAtual = val;
   document.getElementById('btnLiberadoSim').classList.toggle('active-yes', val === true);
   document.getElementById('btnLiberadoNao').classList.toggle('active-no', val === false);
+}
+
+function setHv(val){
+  hvAtual = val;
+  document.getElementById('btnHvSim').classList.toggle('active-yes', val === true);
+  document.getElementById('btnHvNao').classList.toggle('active-no', val === false);
+}
+
+function marcarDestino(checkbox){
+  const label = checkbox.closest('.checkbox-card');
+  if(label) label.classList.toggle('marcado', checkbox.checked);
 }
 
 let firestoreDb = null;
@@ -701,7 +755,7 @@ function registrarChegada(){
     obsSaida: '',
     statusCarregamento: 'em_patio',
     itens: { manga: 0, tampa: 0, devices: 0 },
-    itensCarregando: { manga: 0, tampa: 0, devices: 0 }
+    itensCarregando: { manga: 0, destinos: [], devices: 0, cross: false, putaway: false, hv: null }
   };
   entries.push(novoRegistro);
   salvarRegistro(novoRegistro);
@@ -864,12 +918,16 @@ function renderItensCarregandoTab(){
   div.innerHTML = emPatio.length === 0
     ? '<div class="empty">Nenhum motorista no pátio no momento.</div>'
     : emPatio.map(e => {
-        const it = e.itensCarregando || {manga:0, tampa:0, devices:0};
+        const it = e.itensCarregando || {manga:0, destinos:[], devices:0, cross:false, putaway:false, hv:null};
+        const destinosTxt = (Array.isArray(it.destinos) && it.destinos.length) ? it.destinos.join(', ') : 'nenhum';
+        const marcacoes = [it.cross ? 'CROSS' : null, it.putaway ? 'PUTAWAY' : null].filter(Boolean).join(' + ') || 'sem marcação';
+        const hvTexto = it.hv === true ? 'Com HV' : (it.hv === false ? 'Sem HV' : 'HV não informado');
         return `
       <div class="entry clickable" onclick="selecionarParaItensCarregando('${e.id}')">
         <div class="entry-left">
           <div class="plate">${e.placa}${e.nomeMotorista ? ' <span style="color:var(--text-2); font-weight:400; font-size:14px;">- '+e.nomeMotorista+'</span>' : ''}</div>
-          <div class="meta">Manga: <strong>${it.manga||0}</strong> · Tampa: <strong>${it.tampa||0}</strong> · Devices: <strong>${it.devices||0}</strong></div>
+          <div class="meta">Manga: <strong>${it.manga||0}</strong> · Destinos: <strong>${destinosTxt}</strong> · Devices: <strong>${it.devices||0}</strong></div>
+          <div class="meta">${marcacoes} · ${hvTexto}</div>
         </div>
       </div>`;
       }).join('');
@@ -884,10 +942,19 @@ function selecionarParaItensCarregando(id){
 function carregarItensCarregandoFormulario(){
   const id = document.getElementById('itensCarregandoSelect').value;
   const entry = entries.find(e => e.id === id);
-  const it = (entry && entry.itensCarregando) ? entry.itensCarregando : {manga:0, tampa:0, devices:0};
+  const it = (entry && entry.itensCarregando) ? entry.itensCarregando : {manga:0, destinos:[], devices:0, cross:false, putaway:false, hv:null};
   document.getElementById('itemCarregandoManga').value = it.manga || '';
-  document.getElementById('itemCarregandoTampa').value = it.tampa || '';
   document.getElementById('itemCarregandoDevices').value = it.devices || '';
+  const destinosMarcados = Array.isArray(it.destinos) ? it.destinos : [];
+  document.querySelectorAll('.destino-check').forEach(chk => {
+    chk.checked = destinosMarcados.includes(chk.value);
+    marcarDestino(chk);
+  });
+  document.getElementById('itemCarregandoCross').checked = !!it.cross;
+  document.getElementById('checkCrossLabel').classList.toggle('marcado', !!it.cross);
+  document.getElementById('itemCarregandoPutaway').checked = !!it.putaway;
+  document.getElementById('checkPutawayLabel').classList.toggle('marcado', !!it.putaway);
+  setHv(it.hv === undefined ? null : it.hv);
 }
 
 function salvarItensCarregando(){
@@ -897,10 +964,14 @@ function salvarItensCarregando(){
     alert('Selecione um motorista no pátio para registrar os itens.');
     return;
   }
+  const destinosMarcados = Array.from(document.querySelectorAll('.destino-check:checked')).map(chk => chk.value);
   entry.itensCarregando = {
     manga: Number(document.getElementById('itemCarregandoManga').value) || 0,
-    tampa: Number(document.getElementById('itemCarregandoTampa').value) || 0,
-    devices: Number(document.getElementById('itemCarregandoDevices').value) || 0
+    destinos: destinosMarcados,
+    devices: Number(document.getElementById('itemCarregandoDevices').value) || 0,
+    cross: document.getElementById('itemCarregandoCross').checked,
+    putaway: document.getElementById('itemCarregandoPutaway').checked,
+    hv: hvAtual
   };
   salvarRegistro(entry);
   renderAll();
@@ -1017,7 +1088,7 @@ function renderHistorico(){
 
   const tbody = document.getElementById('histBody');
   if(lista.length === 0){
-    tbody.innerHTML = '<tr><td colspan="21" style="text-align:center; color:var(--text-3); padding:20px;">Nenhum registro para os filtros selecionados.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="24" style="text-align:center; color:var(--text-3); padding:20px;">Nenhum registro para os filtros selecionados.</td></tr>';
     return;
   }
   tbody.innerHTML = lista.map(e => `
@@ -1042,8 +1113,11 @@ function renderHistorico(){
       <td>${(e.itens && e.itens.tampa) || 0}</td>
       <td>${(e.itens && e.itens.devices) || 0}</td>
       <td>${(e.itensCarregando && e.itensCarregando.manga) || 0}</td>
-      <td>${(e.itensCarregando && e.itensCarregando.tampa) || 0}</td>
+      <td>${(e.itensCarregando && Array.isArray(e.itensCarregando.destinos) && e.itensCarregando.destinos.length) ? e.itensCarregando.destinos.join(', ') : '-'}</td>
       <td>${(e.itensCarregando && e.itensCarregando.devices) || 0}</td>
+      <td>${(e.itensCarregando && e.itensCarregando.cross) ? '<span class="badge badge-yes">Sim</span>' : '-'}</td>
+      <td>${(e.itensCarregando && e.itensCarregando.putaway) ? '<span class="badge badge-yes">Sim</span>' : '-'}</td>
+      <td>${(e.itensCarregando && e.itensCarregando.hv === true) ? '<span class="badge badge-yes">Sim</span>' : ((e.itensCarregando && e.itensCarregando.hv === false) ? '<span class="badge badge-no">Não</span>' : '-')}</td>
       <td>${e.responsavel || '-'}</td>
       <td>${e.observacao || '-'}</td>
       <td>${e.obsSaida || '-'}</td>
@@ -1074,8 +1148,11 @@ function exportarExcel(){
     'Tampa (chegou)': (e.itens && e.itens.tampa) || 0,
     'Devices (chegou)': (e.itens && e.itens.devices) || 0,
     'Manga (carregando)': (e.itensCarregando && e.itensCarregando.manga) || 0,
-    'Tampa (carregando)': (e.itensCarregando && e.itensCarregando.tampa) || 0,
+    'Destinos (carregando)': (e.itensCarregando && Array.isArray(e.itensCarregando.destinos) && e.itensCarregando.destinos.length) ? e.itensCarregando.destinos.join(', ') : '',
     'Devices (carregando)': (e.itensCarregando && e.itensCarregando.devices) || 0,
+    'Cross': (e.itensCarregando && e.itensCarregando.cross) ? 'Sim' : 'Não',
+    'Putaway': (e.itensCarregando && e.itensCarregando.putaway) ? 'Sim' : 'Não',
+    'HV': (e.itensCarregando && e.itensCarregando.hv === true) ? 'Sim' : ((e.itensCarregando && e.itensCarregando.hv === false) ? 'Não' : ''),
     'Responsável': e.responsavel || '',
     'Observação Chegada': e.observacao || '',
     'Observação Saída': e.obsSaida || '',
@@ -1084,7 +1161,7 @@ function exportarExcel(){
   const ws = XLSX.utils.json_to_sheet(linhas);
   ws['!cols'] = [
     {wch:12},{wch:12},{wch:22},{wch:12},{wch:14},{wch:8},{wch:12},{wch:12},{wch:10},{wch:22},
-    {wch:9},{wch:9},{wch:10},{wch:9},{wch:9},{wch:10},
+    {wch:9},{wch:20},{wch:10},{wch:8},{wch:9},{wch:6},
     {wch:18},{wch:28},{wch:28},{wch:12}
   ];
   const wb = XLSX.utils.book_new();
