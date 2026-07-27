@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Motoristas - CD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="repositorio.js"></script>
+<script src="firebase-config.js"></script>
+<style>
+  :root{
+    --bg-deep:#132029;
+    --bg-panel:#1B2E39;
+    --bg-panel-2:#213947;
+    --line:rgba(255,255,255,0.09);
+    --amber:#F2A93C;
+    --amber-dark:#D6890F;
+    --amber-text:#3A2404;
+    --text-1:#EDF2F5;
+    --text-2:#A9BAC4;
+    --text-3:#758993;
+    --success:#3FA66B;
+    --success-bg:#1D3A2B;
+    --danger:#E1574C;
+    --danger-bg:#3B211E;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; height:100%; background:var(--bg-deep);}
+  .app{
+    font-family:'Inter',sans-serif;
+    background:var(--bg-deep);
+    color:var(--text-1);
+    padding:20px clamp(16px,4vw,56px) 40px;
+    border-radius:0;
+    width:100%;
+    max-width:1100px;
+    min-height:100vh;
+    margin:0 auto;
+  }
+  h1,h2,.disp{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.03em;}
+  .header{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
+  .header h1{font-size:22px; font-weight:600; margin:0; color:var(--text-1);}
+  .header .sub{font-size:12px; color:var(--text-3); margin-top:2px;}
+  .clock{font-family:'Oswald',sans-serif; font-size:26px; font-weight:600; color:var(--amber); letter-spacing:0.04em;}
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px;}
+  .stat{background:var(--bg-panel); border-radius:var(--radius); padding:14px 12px; text-align:center; border:1px solid var(--line);}
+  .stat .num{font-family:'Oswald',sans-serif; font-size:28px; font-weight:600; color:var(--amber);}
+  .stat .lbl{font-size:11px; color:var(--text-2); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px;}
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+  .tab-btn{
+    background:transparent; border:none; color:var(--text-2); font-family:'Oswald',sans-serif; font-size:13px;
+    text-transform:uppercase; letter-spacing:0.04em; font-weight:600; padding:10px 16px; cursor:pointer;
+    border-bottom:2.5px solid transparent; margin-bottom:-1px;
+  }
+  .tab-btn.active{color:var(--amber); border-bottom-color:var(--amber);}
+  .view{display:none;}
+  .view.active{display:block;}
+  .card{background:var(--bg-panel); border-radius:14px; padding:18px; margin-bottom:16px; border:1px solid var(--line);}
+  .card h2{font-size:15px; font-weight:600; margin:0 0 14px; color:var(--text-1);}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; color:var(--text-2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; font-weight:600;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  select,input[type=date],input[type=time],input[type=text],textarea{
+    width:100%; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-1);
+    border-radius:8px; padding:12px 12px; font-size:16px; font-family:'Inter',sans-serif;
+  }
+  textarea{resize:vertical; min-height:44px; font-size:14px;}
+  select:focus,input:focus,textarea:focus{outline:2px solid var(--amber); outline-offset:1px;}
+  .now-btn{background:transparent; border:1px solid var(--line); color:var(--text-2); font-size:11px; padding:5px 9px; border-radius:6px; margin-left:8px; cursor:pointer;}
+  .now-btn:hover{border-color:var(--amber); color:var(--amber);}
+  .opt-tag{font-size:10px; color:var(--text-3); text-transform:none; font-weight:400; letter-spacing:0; margin-left:6px;}
+  .req-tag{font-size:10px; color:var(--danger); text-transform:none; font-weight:600; letter-spacing:0; margin-left:6px;}
+  .toggle-group{display:flex; gap:10px;}
+  .toggle-btn{
+    flex:1; padding:16px 8px; border-radius:10px; border:2px solid var(--line); background:var(--bg-panel-2);
+    color:var(--text-2); font-size:15px; font-weight:600; cursor:pointer; text-align:center; font-family:'Inter',sans-serif;
+  }
+  .toggle-btn.active-yes{border-color:var(--success); background:var(--success-bg); color:#9FE0B8;}
+  .toggle-btn.active-no{border-color:var(--danger); background:var(--danger-bg); color:#F2A6A0;}
+  .big-btn{
+    width:100%; padding:18px; border-radius:12px; border:none; background:var(--amber); color:var(--amber-text);
+    font-family:'Oswald',sans-serif; font-size:17px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase;
+    cursor:pointer; margin-top:6px;
+  }
+  .big-btn:hover{background:var(--amber-dark);}
+  .outro-wrap{margin-top:8px; display:none;}
+  .section-title{font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-2); font-weight:700; margin:22px 0 10px;}
+  .entry{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
+    display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; cursor:default;
+  }
+  .entry.clickable{cursor:pointer;}
+  .entry.clickable:hover{border-color:var(--amber);}
+  .entry-left{display:flex; flex-direction:column; gap:4px;}
+  .plate{font-family:'Oswald',sans-serif; font-size:17px; font-weight:600; letter-spacing:0.04em;}
+  .meta{font-size:12px; color:var(--text-2);}
+  .obs{font-size:12px; color:var(--text-3); margin-top:2px; font-style:italic;}
+  .badge{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; margin-left:6px; text-transform:uppercase;}
+  .badge-yes{background:var(--success-bg); color:#9FE0B8;}
+  .badge-no{background:var(--danger-bg); color:#F2A6A0;}
+  .badge-wait{background:rgba(242,169,60,0.16); color:var(--amber);}
+  .done-time{font-size:13px; color:var(--text-2); font-weight:600; white-space:nowrap;}
+  .empty{color:var(--text-3); font-size:13px; padding:18px; text-align:center; background:var(--bg-panel); border-radius:12px; border:1px dashed var(--line);}
+  .date-filter{display:flex; align-items:center; gap:8px; margin-bottom:18px; flex-wrap:wrap;}
+  .date-filter label{font-size:12px; color:var(--text-2); text-transform:uppercase; letter-spacing:0.04em;}
+  .date-filter input,.date-filter select{width:auto; flex:none;}
+  .today-btn{background:transparent; border:1px solid var(--line); color:var(--text-2); font-size:12px; padding:9px 12px; border-radius:8px; cursor:pointer;}
+  .today-btn:hover{border-color:var(--amber); color:var(--amber);}
+  .hist-filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:flex-end;}
+  .hist-filters .field{margin-bottom:0; min-width:140px;}
+  .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:12px;}
+  table{width:100%; border-collapse:collapse; font-size:13px; min-width:900px;}
+  thead th{
+    background:var(--bg-panel-2); text-align:left; padding:10px 12px; font-family:'Oswald',sans-serif;
+    text-transform:uppercase; letter-spacing:0.03em; font-size:11px; color:var(--text-2); font-weight:600;
+  }
+  tbody td{padding:10px 12px; border-top:1px solid var(--line); color:var(--text-1); vertical-align:top;}
+  tbody tr:nth-child(even){background:rgba(255,255,255,0.02);}
+  .hist-count{font-size:12px; color:var(--text-3); margin-bottom:10px;}
+  @media(max-width:420px){.stats{grid-template-columns:1fr 1fr;} .stats .stat:last-child{grid-column:span 2;}}
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(8,14,18,0.72); z-index:1000;
+    align-items:center; justify-content:center; padding:16px;
+  }
+  .modal-box{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:22px;
+    max-width:360px; width:100%; font-family:'Inter',sans-serif; color:var(--text-1);
+    box-shadow:0 12px 40px rgba(0,0,0,0.5);
+  }
+</style>
+</head>
+<body>
+<div id="loginScreen" style="position:fixed; inset:0; background:#132029; z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; font-family:'Inter',sans-serif;">
+  <div style="background:#1B2E39; border:1px solid rgba(255,255,255,0.09); border-radius:14px; padding:32px 28px; max-width:340px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.5);">
+    <div style="font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.03em; font-size:20px; font-weight:600; color:#EDF2F5; margin-bottom:4px;">Controle de Motoristas</div>
+    <div style="font-size:12px; color:#758993; margin-bottom:22px;">Faça login para acessar o painel</div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block; font-size:12px; color:#A9BAC4; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; font-weight:600;">Usuário</label>
+      <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="off"
+        style="width:100%; background:#213947; border:1px solid rgba(255,255,255,0.09); color:#EDF2F5; border-radius:8px; padding:12px; font-size:16px; box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:8px;">
+      <label style="display:block; font-size:12px; color:#A9BAC4; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; font-weight:600;">Senha</label>
+      <input type="password" id="loginSenha" placeholder="Senha" autocomplete="off"
+        onkeydown="if(event.key==='Enter') tentarLogin()"
+        style="width:100%; background:#213947; border:1px solid rgba(255,255,255,0.09); color:#EDF2F5; border-radius:8px; padding:12px; font-size:16px; box-sizing:border-box;">
+    </div>
+    <div id="loginErro" style="display:none; color:#E1574C; font-size:12px; margin-bottom:10px;">Usuário ou senha incorretos.</div>
+    <button onclick="tentarLogin()"
+      style="width:100%; padding:16px; border-radius:12px; border:none; background:#F2A93C; color:#3A2404; font-family:'Oswald',sans-serif; font-size:15px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; cursor:pointer; margin-top:8px;">
+      Entrar
+    </button>
+  </div>
+</div>
+
+<div class="app">
+  <div class="header">
+    <div>
+      <h1>Controle de Motoristas</h1>
+      <div class="sub">Entrada e saída - Centro de Distribuição</div>
+    </div>
+    <div class="clock" id="clock">--:--</div>
+  </div>
+  <div id="saveBadge" style="text-align:right; font-size:11px; color:var(--text-2); opacity:0; transition:opacity 0.3s; margin-bottom:6px;">Salvo no histórico ✓</div>
+  <div id="statusConexao" style="display:none; font-size:12px; padding:10px 14px; border-radius:8px; margin-bottom:14px; line-height:1.5;"></div>
+
+  <div class="stats">
+    <div class="stat"><div class="num" id="statPatio">0</div><div class="lbl">No pátio agora</div></div>
+    <div class="stat"><div class="num" id="statHoje">0</div><div class="lbl">Chegadas hoje</div></div>
+    <div class="stat"><div class="num" id="statConcluidos">0</div><div class="lbl">Liberados hoje</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtnChegada" onclick="switchTab('chegada')">Registro de chegada</button>
+    <button class="tab-btn" id="tabBtnItens" onclick="switchTab('itens')">Itens que chegaram no carro</button>
+    <button class="tab-btn" id="tabBtnItensCarregando" onclick="switchTab('itensCarregando')">Itens sendo carregados</button>
+    <button class="tab-btn" id="tabBtnSaida" onclick="switchTab('saida')">Registro de saída</button>
+    <button class="tab-btn" id="tabBtnHistorico" onclick="switchTab('historico')">Histórico completo</button>
+  </div>
+
+  <div class="view active" id="viewChegada">
+    <div class="card">
+      <h2>Registrar chegada</h2>
+      <div class="field">
+        <label for="placaSelect">Motorista / Placa</label>
+        <select id="placaSelect">
+          <option value="IWF4H66">IWF4H66</option>
+          <option value="AMT9D75">AMT9D75</option>
+          <option value="OUTRO">Outro motorista...</option>
+        </select>
+        <div class="outro-wrap" id="outroWrap">
+          <input type="text" id="placaOutro" placeholder="Digite a placa">
+        </div>
+      </div>
+      <div class="field">
+        <label for="nomeMotorista">Nome do motorista</label>
+        <input type="text" id="nomeMotorista" placeholder="Ex: João da Silva">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="dataChegada">Dia de chegada</label>
+          <input type="date" id="dataChegada">
+        </div>
+        <div class="field">
+          <label for="horaChegada">Hora de chegada <button type="button" class="now-btn" id="btnAgoraChegada">agora</button></label>
+          <input type="time" id="horaChegada">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="doca">Doca <span class="req-tag">obrigatório</span></label>
+          <input type="text" id="doca" placeholder="Ex: 113" required>
+        </div>
+        <div class="field">
+          <label for="responsavel">Responsável pelo registro <span class="opt-tag">opcional</span></label>
+          <input type="text" id="responsavel" placeholder="Seu nome">
+        </div>
+      </div>
+      <div class="field">
+        <label>Chegou com o caminhão carregado?</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" id="btnCarregadoSim" onclick="setCarregado(true)">Sim, carregado</button>
+          <button type="button" class="toggle-btn" id="btnCarregadoNao" onclick="setCarregado(false)">Não, vazio</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="observacao">Observação <span class="opt-tag">opcional</span></label>
+        <textarea id="observacao" placeholder="Qualquer detalhe importante sobre este carregamento"></textarea>
+      </div>
+      <button class="big-btn" onclick="registrarChegada()">Registrar chegada</button>
+    </div>
+
+    <div class="section-title">No pátio agora</div>
+    <div id="listaPatioChegada"></div>
+  </div>
+
+  <div class="view" id="viewItens">
+    <div class="card">
+      <h2>Itens que chegaram no carro</h2>
+      <div class="field">
+        <label for="itensSelect">Motorista no pátio</label>
+        <select id="itensSelect" onchange="carregarItensFormulario()"></select>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="itemManga">Manga <span class="opt-tag">quantidade</span></label>
+          <input type="number" id="itemManga" min="0" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="itemTampa">Tampa <span class="opt-tag">quantidade</span></label>
+          <input type="number" id="itemTampa" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="field">
+        <label for="itemDevices">Devices <span class="opt-tag">quantidade</span></label>
+        <input type="number" id="itemDevices" min="0" placeholder="0">
+      </div>
+      <button class="big-btn" onclick="salvarItens()">Salvar itens</button>
+    </div>
+
+    <div class="section-title">Itens que chegaram (pátio)</div>
+    <div id="listaItensPatio"></div>
+  </div>
+
+  <div class="view" id="viewItensCarregando">
+    <div class="card">
+      <h2>Itens sendo carregados no carro</h2>
+      <div class="field">
+        <label for="itensCarregandoSelect">Motorista no pátio</label>
+        <select id="itensCarregandoSelect" onchange="carregarItensCarregandoFormulario()"></select>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="itemCarregandoManga">Manga <span class="opt-tag">quantidade</span></label>
+          <input type="number" id="itemCarregandoManga" min="0" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="itemCarregandoTampa">Tampa <span class="opt-tag">quantidade</span></label>
+          <input type="number" id="itemCarregandoTampa" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="field">
+        <label for="itemCarregandoDevices">Devices <span class="opt-tag">quantidade</span></label>
+        <input type="number" id="itemCarregandoDevices" min="0" placeholder="0">
+      </div>
+      <button class="big-btn" onclick="salvarItensCarregando()">Salvar itens</button>
+    </div>
+
+    <div class="section-title">Itens sendo carregados (pátio)</div>
+    <div id="listaItensCarregandoPatio"></div>
+  </div>
+
+  <div class="view" id="viewSaida">
+    <div class="card">
+      <h2>Registrar saída e liberação</h2>
+      <div class="field">
+        <label for="saidaSelect">Motorista no pátio</label>
+        <select id="saidaSelect"></select>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="dataSaida">Dia de saída</label>
+          <input type="date" id="dataSaida">
+        </div>
+        <div class="field">
+          <label for="horaSaidaInput">Hora de saída <button type="button" class="now-btn" id="btnAgoraSaida">agora</button></label>
+          <input type="time" id="horaSaidaInput">
+        </div>
+      </div>
+      <div class="field">
+        <label>Motorista liberado?</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" id="btnLiberadoSim" onclick="setLiberado(true)">Sim, liberado</button>
+          <button type="button" class="toggle-btn" id="btnLiberadoNao" onclick="setLiberado(false)">Não liberado</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="obsSaida">Observação de saída <span class="opt-tag">opcional</span></label>
+        <textarea id="obsSaida" placeholder="Motivo de retenção, pendência, etc."></textarea>
+      </div>
+      <button class="big-btn" onclick="registrarSaida()">Registrar saída</button>
+    </div>
+
+    <div class="section-title">Aguardando liberação</div>
+    <div id="listaPatioSaida"></div>
+
+    <div class="date-filter">
+      <label for="dataFiltroSaida">Ver liberados do dia</label>
+      <input type="date" id="dataFiltroSaida">
+      <button class="today-btn" onclick="irParaHojeSaida()">Hoje</button>
+    </div>
+    <div class="section-title">Liberados / concluídos</div>
+    <div id="listaConcluidos"></div>
+  </div>
+
+  <div class="view" id="viewHistorico">
+    <div class="hist-filters">
+      <div class="field">
+        <label for="histMotorista">Motorista</label>
+        <select id="histMotorista"><option value="">Todos</option></select>
+      </div>
+      <div class="field">
+        <label for="histStatus">Status</label>
+        <select id="histStatus">
+          <option value="">Todos</option>
+          <option value="patio">No pátio</option>
+          <option value="liberado">Liberado</option>
+          <option value="naoliberado">Não liberado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="histInicio">De</label>
+        <input type="date" id="histInicio">
+      </div>
+      <div class="field">
+        <label for="histFim">Até</label>
+        <input type="date" id="histFim">
+      </div>
+      <button class="today-btn" onclick="limparFiltrosHistorico()">Limpar filtros</button>
+    </div>
+    <div class="hist-count" id="histCount"></div>
+    <button class="today-btn" style="margin-bottom:14px;" onclick="exportarExcel()">Exportar para Excel</button>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Chegada</th><th>Placa</th><th>Nome</th><th>Hora Cheg.</th><th>Carregado</th><th>Doca</th>
+            <th>Saída</th><th>Hora Saída</th><th>Liberado</th><th>Situação</th>
+            <th>Manga (chegou)</th><th>Tampa (chegou)</th><th>Devices (chegou)</th>
+            <th>Manga (carregando)</th><th>Tampa (carregando)</th><th>Devices (carregando)</th>
+            <th>Responsável</th><th>Obs. Chegada</th><th>Obs. Saída</th><th>Status</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="deleteModal" class="modal-overlay" onclick="if(event.target===this) cancelarExclusao()">
+  <div class="modal-box">
+    <h3 style="margin:0 0 10px; font-family:'Oswald',sans-serif; font-size:16px; text-transform:uppercase;">Excluir registro</h3>
+    <p id="deleteModalInfo" style="font-size:13px; color:var(--text-2); margin:0 0 14px;"></p>
+    <div class="field">
+      <label for="deletePasswordInput">Senha de confirmação</label>
+      <input type="password" id="deletePasswordInput" placeholder="Digite a senha" onkeydown="if(event.key==='Enter') confirmarExclusao()">
+    </div>
+    <div id="deleteModalError" style="display:none; color:var(--danger); font-size:12px; margin:-6px 0 12px;"></div>
+    <div style="display:flex; gap:10px;">
+      <button class="today-btn" style="flex:1; padding:12px;" onclick="cancelarExclusao()">Cancelar</button>
+      <button class="big-btn" style="flex:1; margin-top:0; background:var(--danger); color:#fff; padding:12px;" onclick="confirmarExclusao()">Excluir definitivamente</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let entries = [];
+
+const LOGIN_SESSION_KEY = 'driver-log:logado';
+
+function checarLogin(){
+  let jaLogado = false;
+  try{ jaLogado = sessionStorage.getItem(LOGIN_SESSION_KEY) === 'sim'; }catch(e){}
+  if(jaLogado){
+    document.getElementById('loginScreen').style.display = 'none';
+  }else{
+    document.getElementById('loginUsuario').focus();
+  }
+}
+
+function tentarLogin(){
+  const usuario = document.getElementById('loginUsuario').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  const cred = (typeof REPOSITORIO_APP !== 'undefined') ? REPOSITORIO_APP.login : { usuario:'carregamento', senha:'shopee123' };
+
+  if(usuario === cred.usuario && senha === cred.senha){
+    document.getElementById('loginErro').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'none';
+    try{ sessionStorage.setItem(LOGIN_SESSION_KEY, 'sim'); }catch(e){}
+  }else{
+    document.getElementById('loginErro').style.display = 'block';
+    document.getElementById('loginSenha').value = '';
+    document.getElementById('loginSenha').focus();
+  }
+}
+
+checarLogin();
+
+let carregadoAtual = null;
+let liberadoAtual = null;
+let listaHistoricoAtual = [];
+const STORAGE_KEY = 'driver-log:entries';
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+function nowTimeStr(){
+  const d = new Date();
+  return pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+function updateClock(){
+  const d = new Date();
+  document.getElementById('clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+updateClock();
+setInterval(updateClock, 15000);
+
+document.getElementById('dataChegada').value = todayStr();
+document.getElementById('horaChegada').value = nowTimeStr();
+document.getElementById('dataSaida').value = todayStr();
+document.getElementById('horaSaidaInput').value = nowTimeStr();
+document.getElementById('dataFiltroSaida').value = todayStr();
+
+document.getElementById('btnAgoraChegada').addEventListener('click', () => {
+  document.getElementById('horaChegada').value = nowTimeStr();
+});
+document.getElementById('btnAgoraSaida').addEventListener('click', () => {
+  document.getElementById('horaSaidaInput').value = nowTimeStr();
+});
+
+document.getElementById('placaSelect').addEventListener('change', (e) => {
+  document.getElementById('outroWrap').style.display = e.target.value === 'OUTRO' ? 'block' : 'none';
+});
+
+document.getElementById('dataFiltroSaida').addEventListener('change', renderSaidaTab);
+['histMotorista','histStatus','histInicio','histFim'].forEach(id => {
+  document.getElementById(id).addEventListener('change', renderHistorico);
+});
+
+function switchTab(name){
+  document.getElementById('viewChegada').classList.toggle('active', name === 'chegada');
+  document.getElementById('viewItens').classList.toggle('active', name === 'itens');
+  document.getElementById('viewItensCarregando').classList.toggle('active', name === 'itensCarregando');
+  document.getElementById('viewSaida').classList.toggle('active', name === 'saida');
+  document.getElementById('viewHistorico').classList.toggle('active', name === 'historico');
+  document.getElementById('tabBtnChegada').classList.toggle('active', name === 'chegada');
+  document.getElementById('tabBtnItens').classList.toggle('active', name === 'itens');
+  document.getElementById('tabBtnItensCarregando').classList.toggle('active', name === 'itensCarregando');
+  document.getElementById('tabBtnSaida').classList.toggle('active', name === 'saida');
+  document.getElementById('tabBtnHistorico').classList.toggle('active', name === 'historico');
+  if(name === 'itens') renderItensTab();
+  if(name === 'itensCarregando') renderItensCarregandoTab();
+  if(name === 'saida') renderSaidaTab();
+  if(name === 'historico') renderHistorico();
+}
+
+function irParaHojeSaida(){
+  document.getElementById('dataFiltroSaida').value = todayStr();
+  renderSaidaTab();
+}
+
+function limparFiltrosHistorico(){
+  document.getElementById('histMotorista').value = '';
+  document.getElementById('histStatus').value = '';
+  document.getElementById('histInicio').value = '';
+  document.getElementById('histFim').value = '';
+  renderHistorico();
+}
+
+function setCarregado(val){
+  carregadoAtual = val;
+  document.getElementById('btnCarregadoSim').classList.toggle('active-yes', val === true);
+  document.getElementById('btnCarregadoNao').classList.toggle('active-no', val === false);
+}
+
+function setLiberado(val){
+  liberadoAtual = val;
+  document.getElementById('btnLiberadoSim').classList.toggle('active-yes', val === true);
+  document.getElementById('btnLiberadoNao').classList.toggle('active-no', val === false);
+}
+
+let firestoreDb = null;
+let firestoreAtivo = false;
+
+function inicializarFirebase(){
+  if(typeof FIREBASE_CONFIG === 'undefined'){
+    console.warn('firebase-config.js não carregou (arquivo ausente ou fora da pasta). Usando apenas armazenamento local.');
+    mostrarStatusConexao('⚠ O arquivo firebase-config.js não foi encontrado nesta pasta do site. Confira se ele foi enviado ao GitHub, na MESMA pasta do index.html.', 'aviso');
+    return false;
+  }
+  const cfg = FIREBASE_CONFIG;
+  if(!cfg.apiKey || cfg.apiKey.indexOf('COLE_AQUI') !== -1){
+    console.warn('firebase-config.js encontrado, mas ainda com os valores de exemplo (COLE_AQUI).');
+    mostrarStatusConexao('⚠ O firebase-config.js deste site ainda tem os valores de exemplo (COLE_AQUI). O arquivo com as chaves reais não foi enviado ainda.', 'aviso');
+    return false;
+  }
+  try{
+    firebase.initializeApp(cfg);
+    firestoreDb = firebase.firestore();
+    return true;
+  }catch(e){
+    console.error('Falha ao iniciar Firebase', e);
+    mostrarStatusConexao('✗ Erro ao iniciar o Firebase: [' + (e.code || '?') + '] ' + (e.message || e), 'erro');
+    return false;
+  }
+}
+
+function cacheLocal(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }catch(e){ /* ignora */ }
+}
+
+function carregarCacheLocal(){
+  try{
+    const local = localStorage.getItem(STORAGE_KEY);
+    entries = local ? JSON.parse(local) : [];
+  }catch(e){
+    entries = [];
+  }
+  if(!Array.isArray(entries)) entries = [];
+}
+
+function mostrarBadge(texto, cor, sumir){
+  const badge = document.getElementById('saveBadge');
+  if(!badge) return;
+  badge.textContent = texto;
+  badge.style.color = cor;
+  badge.style.opacity = '1';
+  if(sumir) setTimeout(() => { badge.style.opacity = '0'; }, 1800);
+}
+
+function mostrarStatusConexao(texto, tipo){
+  const el = document.getElementById('statusConexao');
+  if(!el) return;
+  el.style.display = 'block';
+  el.textContent = texto;
+  if(tipo === 'ok'){ el.style.background = 'var(--success-bg)'; el.style.color = '#9FE0B8'; }
+  else if(tipo === 'erro'){ el.style.background = 'var(--danger-bg)'; el.style.color = '#F2A6A0'; }
+  else { el.style.background = 'rgba(242,169,60,0.16)'; el.style.color = 'var(--amber)'; }
+}
+
+function iniciarSincronizacao(){
+  firestoreAtivo = inicializarFirebase();
+  if(!firestoreAtivo){
+    mostrarStatusConexao('⚠ Firebase não configurado neste arquivo — o histórico está sendo salvo só neste navegador, não é compartilhado com outros computadores.', 'aviso');
+    carregarCacheLocal();
+    renderAll();
+    return;
+  }
+  mostrarBadge('Conectando ao histórico compartilhado...', 'var(--text-2)', false);
+  firestoreDb.collection('motoristas_entries').onSnapshot(
+    (snapshot) => {
+      entries = snapshot.docs.map(doc => doc.data());
+      cacheLocal();
+      renderAll();
+      mostrarBadge('Sincronizado ✓', 'var(--success)', true);
+      mostrarStatusConexao('✓ Conectado ao histórico compartilhado (Firebase). ' + entries.length + ' registro(s) carregado(s).', 'ok');
+      setTimeout(() => { document.getElementById('statusConexao').style.display = 'none'; }, 4000);
+    },
+    (erro) => {
+      console.error('Erro de sincronização com o Firebase, usando cache local:', erro);
+      carregarCacheLocal();
+      renderAll();
+      mostrarBadge('Sem conexão - mostrando cache local', 'var(--danger)', false);
+      mostrarStatusConexao('✗ Não foi possível conectar ao histórico compartilhado. Erro: [' + (erro.code || '?') + '] ' + (erro.message || erro) + '. Mostrando apenas os dados salvos neste navegador.', 'erro');
+    }
+  );
+}
+
+async function salvarRegistro(entry){
+  cacheLocal();
+  if(!firestoreAtivo){
+    mostrarBadge('Salvo neste dispositivo (Firebase não configurado)', 'var(--amber)', true);
+    return;
+  }
+  mostrarBadge('Salvando...', 'var(--text-2)', false);
+  try{
+    await firestoreDb.collection('motoristas_entries').doc(entry.id).set(entry);
+    mostrarBadge('Salvo e sincronizado ✓', 'var(--success)', true);
+  }catch(e){
+    console.error('Falha ao sincronizar com o Firebase', e);
+    mostrarBadge('Salvo só neste aparelho - falha ao sincronizar', 'var(--danger)', false);
+    mostrarStatusConexao('✗ Falha ao salvar no histórico compartilhado. Erro: [' + (e.code || '?') + '] ' + (e.message || e), 'erro');
+  }
+}
+
+async function excluirRegistroRemoto(id){
+  cacheLocal();
+  if(!firestoreAtivo) return;
+  try{
+    await firestoreDb.collection('motoristas_entries').doc(id).delete();
+  }catch(e){
+    console.error('Falha ao excluir no Firebase', e);
+    alert('O registro foi removido aqui, mas não foi possível sincronizar a exclusão. Verifique a conexão.');
+  }
+}
+
+
+function renderAll(){
+  renderStats();
+  renderChegadaTab();
+  renderItensTab();
+  renderItensCarregandoTab();
+  renderSaidaTab();
+  renderHistorico();
+}
+
+function registrarChegada(){
+  const select = document.getElementById('placaSelect');
+  let placa = select.value;
+  if(placa === 'OUTRO'){
+    const outro = document.getElementById('placaOutro').value.trim().toUpperCase();
+    if(!outro){ document.getElementById('placaOutro').focus(); return; }
+    placa = outro;
+  }
+  const dataChegada = document.getElementById('dataChegada').value;
+  const horaChegada = document.getElementById('horaChegada').value;
+  const doca = document.getElementById('doca').value.trim();
+  if(!dataChegada || !horaChegada || carregadoAtual === null){
+    alert('Preencha data, hora e se chegou carregado antes de registrar.');
+    return;
+  }
+  if(!doca){
+    alert('Informe a doca antes de registrar.');
+    document.getElementById('doca').focus();
+    return;
+  }
+  const novoRegistro = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    placa,
+    nomeMotorista: document.getElementById('nomeMotorista').value.trim(),
+    dataChegada,
+    horaChegada,
+    carregado: carregadoAtual,
+    doca,
+    responsavel: document.getElementById('responsavel').value.trim(),
+    observacao: document.getElementById('observacao').value.trim(),
+    dataSaida: null,
+    horaSaida: null,
+    liberado: null,
+    obsSaida: '',
+    statusCarregamento: 'em_patio',
+    itens: { manga: 0, tampa: 0, devices: 0 },
+    itensCarregando: { manga: 0, tampa: 0, devices: 0 }
+  };
+  entries.push(novoRegistro);
+  salvarRegistro(novoRegistro);
+  setCarregado(null);
+  document.getElementById('btnCarregadoSim').classList.remove('active-yes');
+  document.getElementById('btnCarregadoNao').classList.remove('active-no');
+  document.getElementById('horaChegada').value = nowTimeStr();
+  document.getElementById('doca').value = '';
+  document.getElementById('nomeMotorista').value = '';
+  document.getElementById('observacao').value = '';
+  document.getElementById('responsavel').value = '';
+  if(select.value === 'OUTRO'){ document.getElementById('placaOutro').value=''; }
+  renderAll();
+}
+
+function registrarSaida(){
+  const sel = document.getElementById('saidaSelect');
+  const id = sel.value;
+  const entry = entries.find(e => e.id === id);
+  if(!entry){
+    alert('Selecione um motorista no pátio para registrar a saída.');
+    return;
+  }
+  const dataSaida = document.getElementById('dataSaida').value;
+  const horaSaida = document.getElementById('horaSaidaInput').value;
+  if(!dataSaida || !horaSaida || liberadoAtual === null){
+    alert('Preencha data, hora de saída e se o motorista foi liberado.');
+    return;
+  }
+  entry.dataSaida = dataSaida;
+  entry.horaSaida = horaSaida;
+  entry.liberado = liberadoAtual;
+  entry.obsSaida = document.getElementById('obsSaida').value.trim();
+  salvarRegistro(entry);
+  setLiberado(null);
+  document.getElementById('btnLiberadoSim').classList.remove('active-yes');
+  document.getElementById('btnLiberadoNao').classList.remove('active-no');
+  document.getElementById('horaSaidaInput').value = nowTimeStr();
+  document.getElementById('obsSaida').value = '';
+  document.getElementById('dataFiltroSaida').value = dataSaida;
+  renderAll();
+}
+
+function selecionarParaSaida(id){
+  document.getElementById('saidaSelect').value = id;
+  document.getElementById('saidaSelect').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function fmtData(iso){
+  if(!iso) return '-';
+  const [y,m,d] = iso.split('-');
+  return d + '/' + m + '/' + y;
+}
+
+function renderStats(){
+  const hoje = todayStr();
+  const emPatio = entries.filter(e => !e.horaSaida);
+  const chegadasHoje = entries.filter(e => e.dataChegada === hoje);
+  const liberadosHoje = entries.filter(e => e.dataSaida === hoje && e.horaSaida);
+  document.getElementById('statPatio').textContent = emPatio.length;
+  document.getElementById('statHoje').textContent = chegadasHoje.length;
+  document.getElementById('statConcluidos').textContent = liberadosHoje.length;
+}
+
+function cardPatioHTML(e, clickable){
+  return `
+      <div class="entry ${clickable ? 'clickable' : ''}" ${clickable ? `onclick="selecionarParaSaida('${e.id}')"` : ''}>
+        <div class="entry-left">
+          <div class="plate">${e.placa}${e.nomeMotorista ? ' <span style="color:var(--text-2); font-weight:400; font-size:14px;">- '+e.nomeMotorista+'</span>' : ''}</div>
+          <div class="meta">Chegou ${fmtData(e.dataChegada)} às ${e.horaChegada}${e.doca ? ' - Doca '+e.doca : ''}
+            <span class="badge ${e.carregado ? 'badge-yes':'badge-no'}">${e.carregado ? 'Carregado':'Vazio'}</span>
+            <span class="badge badge-wait">No pátio</span>
+          </div>
+          ${e.observacao ? `<div class="obs">${e.observacao}</div>` : ''}
+        </div>
+      </div>`;
+}
+
+function renderChegadaTab(){
+  const emPatio = entries.filter(e => !e.horaSaida).sort((a,b) => (b.dataChegada+b.horaChegada).localeCompare(a.dataChegada+a.horaChegada));
+  const div = document.getElementById('listaPatioChegada');
+  div.innerHTML = emPatio.length === 0
+    ? '<div class="empty">Nenhum motorista no pátio no momento.</div>'
+    : emPatio.map(e => cardPatioHTML(e, false)).join('');
+}
+
+function renderItensTab(){
+  const emPatio = entries.filter(e => !e.horaSaida).sort((a,b) => (a.dataChegada+a.horaChegada).localeCompare(b.dataChegada+b.horaChegada));
+
+  const sel = document.getElementById('itensSelect');
+  const atual = sel.value;
+  if(emPatio.length === 0){
+    sel.innerHTML = '<option value="">Nenhum motorista no pátio</option>';
+  }else{
+    sel.innerHTML = emPatio.map(e => `<option value="${e.id}">${e.placa}${e.nomeMotorista ? ' - '+e.nomeMotorista : ''} (chegou ${fmtData(e.dataChegada)} ${e.horaChegada})</option>`).join('');
+    if(emPatio.find(e => e.id === atual)) sel.value = atual;
+  }
+  carregarItensFormulario();
+
+  const div = document.getElementById('listaItensPatio');
+  div.innerHTML = emPatio.length === 0
+    ? '<div class="empty">Nenhum motorista no pátio no momento.</div>'
+    : emPatio.map(e => {
+        const it = e.itens || {manga:0, tampa:0, devices:0};
+        return `
+      <div class="entry clickable" onclick="selecionarParaItens('${e.id}')">
+        <div class="entry-left">
+          <div class="plate">${e.placa}${e.nomeMotorista ? ' <span style="color:var(--text-2); font-weight:400; font-size:14px;">- '+e.nomeMotorista+'</span>' : ''}</div>
+          <div class="meta">Manga: <strong>${it.manga||0}</strong> · Tampa: <strong>${it.tampa||0}</strong> · Devices: <strong>${it.devices||0}</strong></div>
+        </div>
+      </div>`;
+      }).join('');
+}
+
+function selecionarParaItens(id){
+  document.getElementById('itensSelect').value = id;
+  carregarItensFormulario();
+  document.getElementById('itensSelect').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function carregarItensFormulario(){
+  const id = document.getElementById('itensSelect').value;
+  const entry = entries.find(e => e.id === id);
+  const it = (entry && entry.itens) ? entry.itens : {manga:0, tampa:0, devices:0};
+  document.getElementById('itemManga').value = it.manga || '';
+  document.getElementById('itemTampa').value = it.tampa || '';
+  document.getElementById('itemDevices').value = it.devices || '';
+}
+
+function salvarItens(){
+  const id = document.getElementById('itensSelect').value;
+  const entry = entries.find(e => e.id === id);
+  if(!entry){
+    alert('Selecione um motorista no pátio para registrar os itens.');
+    return;
+  }
+  entry.itens = {
+    manga: Number(document.getElementById('itemManga').value) || 0,
+    tampa: Number(document.getElementById('itemTampa').value) || 0,
+    devices: Number(document.getElementById('itemDevices').value) || 0
+  };
+  salvarRegistro(entry);
+  renderAll();
+}
+
+function renderItensCarregandoTab(){
+  const emPatio = entries.filter(e => !e.horaSaida).sort((a,b) => (a.dataChegada+a.horaChegada).localeCompare(b.dataChegada+b.horaChegada));
+
+  const sel = document.getElementById('itensCarregandoSelect');
+  const atual = sel.value;
+  if(emPatio.length === 0){
+    sel.innerHTML = '<option value="">Nenhum motorista no pátio</option>';
+  }else{
+    sel.innerHTML = emPatio.map(e => `<option value="${e.id}">${e.placa}${e.nomeMotorista ? ' - '+e.nomeMotorista : ''} (chegou ${fmtData(e.dataChegada)} ${e.horaChegada})</option>`).join('');
+    if(emPatio.find(e => e.id === atual)) sel.value = atual;
+  }
+  carregarItensCarregandoFormulario();
+
+  const div = document.getElementById('listaItensCarregandoPatio');
+  div.innerHTML = emPatio.length === 0
+    ? '<div class="empty">Nenhum motorista no pátio no momento.</div>'
+    : emPatio.map(e => {
+        const it = e.itensCarregando || {manga:0, tampa:0, devices:0};
+        return `
+      <div class="entry clickable" onclick="selecionarParaItensCarregando('${e.id}')">
+        <div class="entry-left">
+          <div class="plate">${e.placa}${e.nomeMotorista ? ' <span style="color:var(--text-2); font-weight:400; font-size:14px;">- '+e.nomeMotorista+'</span>' : ''}</div>
+          <div class="meta">Manga: <strong>${it.manga||0}</strong> · Tampa: <strong>${it.tampa||0}</strong> · Devices: <strong>${it.devices||0}</strong></div>
+        </div>
+      </div>`;
+      }).join('');
+}
+
+function selecionarParaItensCarregando(id){
+  document.getElementById('itensCarregandoSelect').value = id;
+  carregarItensCarregandoFormulario();
+  document.getElementById('itensCarregandoSelect').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function carregarItensCarregandoFormulario(){
+  const id = document.getElementById('itensCarregandoSelect').value;
+  const entry = entries.find(e => e.id === id);
+  const it = (entry && entry.itensCarregando) ? entry.itensCarregando : {manga:0, tampa:0, devices:0};
+  document.getElementById('itemCarregandoManga').value = it.manga || '';
+  document.getElementById('itemCarregandoTampa').value = it.tampa || '';
+  document.getElementById('itemCarregandoDevices').value = it.devices || '';
+}
+
+function salvarItensCarregando(){
+  const id = document.getElementById('itensCarregandoSelect').value;
+  const entry = entries.find(e => e.id === id);
+  if(!entry){
+    alert('Selecione um motorista no pátio para registrar os itens.');
+    return;
+  }
+  entry.itensCarregando = {
+    manga: Number(document.getElementById('itemCarregandoManga').value) || 0,
+    tampa: Number(document.getElementById('itemCarregandoTampa').value) || 0,
+    devices: Number(document.getElementById('itemCarregandoDevices').value) || 0
+  };
+  salvarRegistro(entry);
+  renderAll();
+}
+
+function renderSaidaTab(){
+  const emPatio = entries.filter(e => !e.horaSaida).sort((a,b) => (a.dataChegada+a.horaChegada).localeCompare(b.dataChegada+b.horaChegada));
+
+  const sel = document.getElementById('saidaSelect');
+  const atual = sel.value;
+  if(emPatio.length === 0){
+    sel.innerHTML = '<option value="">Nenhum motorista no pátio</option>';
+  }else{
+    sel.innerHTML = emPatio.map(e => `<option value="${e.id}">${e.placa}${e.nomeMotorista ? ' - '+e.nomeMotorista : ''} (chegou ${fmtData(e.dataChegada)} ${e.horaChegada})</option>`).join('');
+    if(emPatio.find(e => e.id === atual)) sel.value = atual;
+  }
+
+  const listaPatioSaida = document.getElementById('listaPatioSaida');
+  listaPatioSaida.innerHTML = emPatio.length === 0
+    ? '<div class="empty">Nenhum motorista aguardando liberação.</div>'
+    : emPatio.map(e => cardPatioHTML(e, true)).join('');
+
+  const filtro = document.getElementById('dataFiltroSaida').value || todayStr();
+  const concluidos = entries.filter(e => e.horaSaida && e.dataSaida === filtro)
+    .sort((a,b) => (b.horaSaida).localeCompare(a.horaSaida));
+
+  const listaConcluidos = document.getElementById('listaConcluidos');
+  listaConcluidos.innerHTML = concluidos.length === 0
+    ? '<div class="empty">Nenhum motorista liberado neste dia.</div>'
+    : concluidos.map(e => `
+      <div class="entry">
+        <div class="entry-left">
+          <div class="plate">${e.placa}${e.nomeMotorista ? ' <span style="color:var(--text-2); font-weight:400; font-size:14px;">- '+e.nomeMotorista+'</span>' : ''}</div>
+          <div class="meta">Chegou às ${e.horaChegada}${e.doca ? ' - Doca '+e.doca : ''}
+            <span class="badge ${e.liberado ? 'badge-yes':'badge-no'}">${e.liberado ? 'Liberado':'Não liberado'}</span>
+          </div>
+          ${e.obsSaida ? `<div class="obs">${e.obsSaida}</div>` : ''}
+        </div>
+        <div class="done-time">Saiu ${e.horaSaida}</div>
+      </div>
+    `).join('');
+}
+
+let idParaExcluir = null;
+
+function excluirLinha(id){
+  const entry = entries.find(e => e.id === id);
+  if(!entry) return;
+  idParaExcluir = id;
+  document.getElementById('deleteModalInfo').textContent =
+    'Registro de ' + entry.placa + (entry.nomeMotorista ? ' - '+entry.nomeMotorista : '') +
+    ' (chegada em ' + fmtData(entry.dataChegada) + '). Essa ação não pode ser desfeita.';
+  document.getElementById('deletePasswordInput').value = '';
+  document.getElementById('deleteModalError').style.display = 'none';
+  document.getElementById('deleteModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('deletePasswordInput').focus(), 50);
+}
+
+function cancelarExclusao(){
+  idParaExcluir = null;
+  document.getElementById('deleteModal').style.display = 'none';
+}
+
+function confirmarExclusao(){
+  if(!idParaExcluir) return;
+  const senha = document.getElementById('deletePasswordInput').value;
+  const erroEl = document.getElementById('deleteModalError');
+  if(senha !== 'admin'){
+    erroEl.textContent = 'Senha incorreta. O registro não foi excluído.';
+    erroEl.style.display = 'block';
+    return;
+  }
+  const idExcluido = idParaExcluir;
+  entries = entries.filter(e => e.id !== idExcluido);
+  renderAll();
+  cancelarExclusao();
+  excluirRegistroRemoto(idExcluido);
+}
+
+function atualizarStatusCarregamento(id, valor){
+  const entry = entries.find(e => e.id === id);
+  if(!entry) return;
+  entry.statusCarregamento = valor;
+  salvarRegistro(entry);
+}
+
+function populaFiltroMotoristas(){
+  const sel = document.getElementById('histMotorista');
+  const atual = sel.value;
+  const placas = Array.from(new Set(entries.map(e => e.placa))).sort();
+  sel.innerHTML = '<option value="">Todos</option>' + placas.map(p => `<option value="${p}">${p}</option>`).join('');
+  sel.value = atual;
+}
+
+function renderHistorico(){
+  populaFiltroMotoristas();
+  const motorista = document.getElementById('histMotorista').value;
+  const status = document.getElementById('histStatus').value;
+  const inicio = document.getElementById('histInicio').value;
+  const fim = document.getElementById('histFim').value;
+
+  let lista = entries.slice();
+  if(motorista) lista = lista.filter(e => e.placa === motorista);
+  if(status === 'patio') lista = lista.filter(e => !e.horaSaida);
+  if(status === 'liberado') lista = lista.filter(e => e.horaSaida && e.liberado);
+  if(status === 'naoliberado') lista = lista.filter(e => e.horaSaida && !e.liberado);
+  if(inicio) lista = lista.filter(e => e.dataChegada >= inicio);
+  if(fim) lista = lista.filter(e => e.dataChegada <= fim);
+
+  lista.sort((a,b) => (b.dataChegada+b.horaChegada).localeCompare(a.dataChegada+a.horaChegada));
+  listaHistoricoAtual = lista;
+
+  document.getElementById('histCount').textContent = lista.length + (lista.length === 1 ? ' registro encontrado' : ' registros encontrados');
+
+  const tbody = document.getElementById('histBody');
+  if(lista.length === 0){
+    tbody.innerHTML = '<tr><td colspan="21" style="text-align:center; color:var(--text-3); padding:20px;">Nenhum registro para os filtros selecionados.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = lista.map(e => `
+    <tr>
+      <td>${fmtData(e.dataChegada)}</td>
+      <td><strong>${e.placa}</strong></td>
+      <td>${e.nomeMotorista || '-'}</td>
+      <td>${e.horaChegada}</td>
+      <td><span class="badge ${e.carregado ? 'badge-yes':'badge-no'}">${e.carregado ? 'Sim':'Não'}</span></td>
+      <td>${e.doca || '-'}</td>
+      <td>${fmtData(e.dataSaida)}</td>
+      <td>${e.horaSaida || '-'}</td>
+      <td>${e.horaSaida ? `<span class="badge ${e.liberado ? 'badge-yes':'badge-no'}">${e.liberado ? 'Sim':'Não'}</span>` : '-'}</td>
+      <td>
+        <select onchange="atualizarStatusCarregamento('${e.id}', this.value)" style="padding:6px 8px; font-size:12px;">
+          <option value="em_patio" ${e.statusCarregamento==='em_patio' || !e.statusCarregamento ? 'selected':''}>Em pátio</option>
+          <option value="inicio_carregamento" ${e.statusCarregamento==='inicio_carregamento' ? 'selected':''}>Início de carregamento</option>
+          <option value="carregado" ${e.statusCarregamento==='carregado' ? 'selected':''}>Carregado</option>
+        </select>
+      </td>
+      <td>${(e.itens && e.itens.manga) || 0}</td>
+      <td>${(e.itens && e.itens.tampa) || 0}</td>
+      <td>${(e.itens && e.itens.devices) || 0}</td>
+      <td>${(e.itensCarregando && e.itensCarregando.manga) || 0}</td>
+      <td>${(e.itensCarregando && e.itensCarregando.tampa) || 0}</td>
+      <td>${(e.itensCarregando && e.itensCarregando.devices) || 0}</td>
+      <td>${e.responsavel || '-'}</td>
+      <td>${e.observacao || '-'}</td>
+      <td>${e.obsSaida || '-'}</td>
+      <td>${e.horaSaida ? '<span class="badge badge-yes">Concluído</span>' : '<span class="badge badge-wait">No pátio</span>'}</td>
+      <td><button class="exit-btn" style="border-color:var(--danger); color:var(--danger);" onclick="excluirLinha('${e.id}')">Excluir</button></td>
+    </tr>
+  `).join('');
+}
+
+function exportarExcel(){
+  if(!listaHistoricoAtual || listaHistoricoAtual.length === 0){
+    alert('Não há registros para exportar com os filtros atuais.');
+    return;
+  }
+  const statusLabel = { em_patio:'Em pátio', inicio_carregamento:'Início de carregamento', carregado:'Carregado' };
+  const linhas = listaHistoricoAtual.map(e => ({
+    'Data Chegada': fmtData(e.dataChegada),
+    'Placa': e.placa,
+    'Nome do Motorista': e.nomeMotorista || '',
+    'Hora Chegada': e.horaChegada,
+    'Chegou Carregado': e.carregado ? 'Sim' : 'Não',
+    'Doca': e.doca || '',
+    'Data Saída': fmtData(e.dataSaida),
+    'Hora Saída': e.horaSaida || '',
+    'Liberado': e.horaSaida ? (e.liberado ? 'Sim' : 'Não') : '',
+    'Situação do Carregamento': statusLabel[e.statusCarregamento] || 'Em pátio',
+    'Manga (chegou)': (e.itens && e.itens.manga) || 0,
+    'Tampa (chegou)': (e.itens && e.itens.tampa) || 0,
+    'Devices (chegou)': (e.itens && e.itens.devices) || 0,
+    'Manga (carregando)': (e.itensCarregando && e.itensCarregando.manga) || 0,
+    'Tampa (carregando)': (e.itensCarregando && e.itensCarregando.tampa) || 0,
+    'Devices (carregando)': (e.itensCarregando && e.itensCarregando.devices) || 0,
+    'Responsável': e.responsavel || '',
+    'Observação Chegada': e.observacao || '',
+    'Observação Saída': e.obsSaida || '',
+    'Status': e.horaSaida ? 'Concluído' : 'No pátio'
+  }));
+  const ws = XLSX.utils.json_to_sheet(linhas);
+  ws['!cols'] = [
+    {wch:12},{wch:12},{wch:22},{wch:12},{wch:14},{wch:8},{wch:12},{wch:12},{wch:10},{wch:22},
+    {wch:9},{wch:9},{wch:10},{wch:9},{wch:9},{wch:10},
+    {wch:18},{wch:28},{wch:28},{wch:12}
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Historico Motoristas');
+  const agora = new Date();
+  const nomeArquivo = 'controle-motoristas-' + agora.getFullYear() + pad(agora.getMonth()+1) + pad(agora.getDate()) + '.xlsx';
+  XLSX.writeFile(wb, nomeArquivo);
+}
+
+iniciarSincronizacao();
+</script>
+</body>
+</html>
