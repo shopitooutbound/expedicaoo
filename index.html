@@ -8,7 +8,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="repositorio.js"></script>
+<script src="firebase-config.js"></script>
 <style>
   :root{
     --bg-deep:#132029;
@@ -165,6 +168,7 @@
     <div class="clock" id="clock">--:--</div>
   </div>
   <div id="saveBadge" style="text-align:right; font-size:11px; color:var(--text-2); opacity:0; transition:opacity 0.3s; margin-bottom:6px;">Salvo no histórico ✓</div>
+  <div id="statusConexao" style="display:none; font-size:12px; padding:10px 14px; border-radius:8px; margin-bottom:14px; line-height:1.5;"></div>
 
   <div class="stats">
     <div class="stat"><div class="num" id="statPatio">0</div><div class="lbl">No pátio agora</div></div>
@@ -513,65 +517,121 @@ function setLiberado(val){
   document.getElementById('btnLiberadoNao').classList.toggle('active-no', val === false);
 }
 
-const hasCloudStorage = (typeof window !== 'undefined') && !!window.storage;
+let firestoreDb = null;
+let firestoreAtivo = false;
 
-async function loadEntries(){
-  let carregado = false;
-  if(hasCloudStorage){
-    try{
-      const res = await window.storage.get(STORAGE_KEY, false);
-      if(res && res.value){ entries = JSON.parse(res.value); carregado = true; }
-    }catch(e){
-      console.warn('Sem dado salvo em window.storage ainda, ou falha ao ler:', e);
-    }
+function inicializarFirebase(){
+  if(typeof FIREBASE_CONFIG === 'undefined'){
+    console.warn('firebase-config.js não carregou (arquivo ausente ou fora da pasta). Usando apenas armazenamento local.');
+    mostrarStatusConexao('⚠ O arquivo firebase-config.js não foi encontrado nesta pasta do site. Confira se ele foi enviado ao GitHub, na MESMA pasta do index.html.', 'aviso');
+    return false;
   }
-  if(!carregado){
-    try{
-      const local = localStorage.getItem(STORAGE_KEY);
-      if(local){ entries = JSON.parse(local); }
-    }catch(e){
-      console.warn('Sem dado salvo em localStorage ainda, ou falha ao ler:', e);
-    }
+  const cfg = FIREBASE_CONFIG;
+  if(!cfg.apiKey || cfg.apiKey.indexOf('COLE_AQUI') !== -1){
+    console.warn('firebase-config.js encontrado, mas ainda com os valores de exemplo (COLE_AQUI).');
+    mostrarStatusConexao('⚠ O firebase-config.js deste site ainda tem os valores de exemplo (COLE_AQUI). O arquivo com as chaves reais não foi enviado ainda.', 'aviso');
+    return false;
+  }
+  try{
+    firebase.initializeApp(cfg);
+    firestoreDb = firebase.firestore();
+    return true;
+  }catch(e){
+    console.error('Falha ao iniciar Firebase', e);
+    mostrarStatusConexao('✗ Erro ao iniciar o Firebase: [' + (e.code || '?') + '] ' + (e.message || e), 'erro');
+    return false;
+  }
+}
+
+function cacheLocal(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }catch(e){ /* ignora */ }
+}
+
+function carregarCacheLocal(){
+  try{
+    const local = localStorage.getItem(STORAGE_KEY);
+    entries = local ? JSON.parse(local) : [];
+  }catch(e){
+    entries = [];
   }
   if(!Array.isArray(entries)) entries = [];
-  renderAll();
 }
 
-async function saveEntries(){
+function mostrarBadge(texto, cor, sumir){
   const badge = document.getElementById('saveBadge');
-  if(badge){ badge.textContent = 'Salvando...'; badge.style.opacity = '1'; badge.style.color = 'var(--text-2)'; }
-  const payload = JSON.stringify(entries);
-  let okCloud = false, okLocal = false;
+  if(!badge) return;
+  badge.textContent = texto;
+  badge.style.color = cor;
+  badge.style.opacity = '1';
+  if(sumir) setTimeout(() => { badge.style.opacity = '0'; }, 1800);
+}
 
-  // Sempre grava localmente primeiro - funciona mesmo se o arquivo for aberto direto no navegador
+function mostrarStatusConexao(texto, tipo){
+  const el = document.getElementById('statusConexao');
+  if(!el) return;
+  el.style.display = 'block';
+  el.textContent = texto;
+  if(tipo === 'ok'){ el.style.background = 'var(--success-bg)'; el.style.color = '#9FE0B8'; }
+  else if(tipo === 'erro'){ el.style.background = 'var(--danger-bg)'; el.style.color = '#F2A6A0'; }
+  else { el.style.background = 'rgba(242,169,60,0.16)'; el.style.color = 'var(--amber)'; }
+}
+
+function iniciarSincronizacao(){
+  firestoreAtivo = inicializarFirebase();
+  if(!firestoreAtivo){
+    mostrarStatusConexao('⚠ Firebase não configurado neste arquivo — o histórico está sendo salvo só neste navegador, não é compartilhado com outros computadores.', 'aviso');
+    carregarCacheLocal();
+    renderAll();
+    return;
+  }
+  mostrarBadge('Conectando ao histórico compartilhado...', 'var(--text-2)', false);
+  firestoreDb.collection('motoristas_entries').onSnapshot(
+    (snapshot) => {
+      entries = snapshot.docs.map(doc => doc.data());
+      cacheLocal();
+      renderAll();
+      mostrarBadge('Sincronizado ✓', 'var(--success)', true);
+      mostrarStatusConexao('✓ Conectado ao histórico compartilhado (Firebase). ' + entries.length + ' registro(s) carregado(s).', 'ok');
+      setTimeout(() => { document.getElementById('statusConexao').style.display = 'none'; }, 4000);
+    },
+    (erro) => {
+      console.error('Erro de sincronização com o Firebase, usando cache local:', erro);
+      carregarCacheLocal();
+      renderAll();
+      mostrarBadge('Sem conexão - mostrando cache local', 'var(--danger)', false);
+      mostrarStatusConexao('✗ Não foi possível conectar ao histórico compartilhado. Erro: [' + (erro.code || '?') + '] ' + (erro.message || erro) + '. Mostrando apenas os dados salvos neste navegador.', 'erro');
+    }
+  );
+}
+
+async function salvarRegistro(entry){
+  cacheLocal();
+  if(!firestoreAtivo){
+    mostrarBadge('Salvo neste dispositivo (Firebase não configurado)', 'var(--amber)', true);
+    return;
+  }
+  mostrarBadge('Salvando...', 'var(--text-2)', false);
   try{
-    localStorage.setItem(STORAGE_KEY, payload);
-    okLocal = true;
+    await firestoreDb.collection('motoristas_entries').doc(entry.id).set(entry);
+    mostrarBadge('Salvo e sincronizado ✓', 'var(--success)', true);
   }catch(e){
-    console.error('Falha ao salvar em localStorage', e);
-  }
-
-  // Se disponível (dentro do Claude), também grava na nuvem para acompanhar entre sessões/dispositivos
-  if(hasCloudStorage){
-    try{
-      const result = await window.storage.set(STORAGE_KEY, payload, false);
-      okCloud = !!result;
-    }catch(e){
-      console.error('Falha ao salvar em window.storage', e);
-    }
-  }
-
-  if(okLocal || okCloud){
-    if(badge){
-      badge.textContent = 'Salvo ✓';
-      badge.style.color = 'var(--success)';
-      setTimeout(() => { badge.style.opacity = '0'; }, 1800);
-    }
-  }else{
-    if(badge){ badge.textContent = 'Falha ao salvar - tente novamente'; badge.style.color = 'var(--danger)'; badge.style.opacity = '1'; }
-    alert('Não foi possível salvar este registro. O navegador pode estar bloqueando o armazenamento local (modo privado/anônimo bloqueia isso). Tente em uma janela normal.');
+    console.error('Falha ao sincronizar com o Firebase', e);
+    mostrarBadge('Salvo só neste aparelho - falha ao sincronizar', 'var(--danger)', false);
+    mostrarStatusConexao('✗ Falha ao salvar no histórico compartilhado. Erro: [' + (e.code || '?') + '] ' + (e.message || e), 'erro');
   }
 }
+
+async function excluirRegistroRemoto(id){
+  cacheLocal();
+  if(!firestoreAtivo) return;
+  try{
+    await firestoreDb.collection('motoristas_entries').doc(id).delete();
+  }catch(e){
+    console.error('Falha ao excluir no Firebase', e);
+    alert('O registro foi removido aqui, mas não foi possível sincronizar a exclusão. Verifique a conexão.');
+  }
+}
+
 
 function renderAll(){
   renderStats();
@@ -602,7 +662,7 @@ function registrarChegada(){
     document.getElementById('doca').focus();
     return;
   }
-  entries.push({
+  const novoRegistro = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
     placa,
     nomeMotorista: document.getElementById('nomeMotorista').value.trim(),
@@ -619,8 +679,9 @@ function registrarChegada(){
     statusCarregamento: 'em_patio',
     itens: { manga: 0, tampa: 0, devices: 0 },
     itensCarregando: { manga: 0, tampa: 0, devices: 0 }
-  });
-  saveEntries();
+  };
+  entries.push(novoRegistro);
+  salvarRegistro(novoRegistro);
   setCarregado(null);
   document.getElementById('btnCarregadoSim').classList.remove('active-yes');
   document.getElementById('btnCarregadoNao').classList.remove('active-no');
@@ -651,7 +712,7 @@ function registrarSaida(){
   entry.horaSaida = horaSaida;
   entry.liberado = liberadoAtual;
   entry.obsSaida = document.getElementById('obsSaida').value.trim();
-  saveEntries();
+  salvarRegistro(entry);
   setLiberado(null);
   document.getElementById('btnLiberadoSim').classList.remove('active-yes');
   document.getElementById('btnLiberadoNao').classList.remove('active-no');
@@ -759,7 +820,7 @@ function salvarItens(){
     tampa: Number(document.getElementById('itemTampa').value) || 0,
     devices: Number(document.getElementById('itemDevices').value) || 0
   };
-  saveEntries();
+  salvarRegistro(entry);
   renderAll();
 }
 
@@ -818,7 +879,7 @@ function salvarItensCarregando(){
     tampa: Number(document.getElementById('itemCarregandoTampa').value) || 0,
     devices: Number(document.getElementById('itemCarregandoDevices').value) || 0
   };
-  saveEntries();
+  salvarRegistro(entry);
   renderAll();
 }
 
@@ -889,17 +950,18 @@ function confirmarExclusao(){
     erroEl.style.display = 'block';
     return;
   }
-  entries = entries.filter(e => e.id !== idParaExcluir);
-  saveEntries();
+  const idExcluido = idParaExcluir;
+  entries = entries.filter(e => e.id !== idExcluido);
   renderAll();
   cancelarExclusao();
+  excluirRegistroRemoto(idExcluido);
 }
 
 function atualizarStatusCarregamento(id, valor){
   const entry = entries.find(e => e.id === id);
   if(!entry) return;
   entry.statusCarregamento = valor;
-  saveEntries();
+  salvarRegistro(entry);
 }
 
 function populaFiltroMotoristas(){
@@ -1009,7 +1071,7 @@ function exportarExcel(){
   XLSX.writeFile(wb, nomeArquivo);
 }
 
-loadEntries();
+iniciarSincronizacao();
 </script>
 </body>
 </html>
