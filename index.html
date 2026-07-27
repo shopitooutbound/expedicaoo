@@ -14,16 +14,16 @@
 <script src="firebase-config.js"></script>
 <style>
   :root{
-    --bg-deep:#132029;
-    --bg-panel:#1B2E39;
-    --bg-panel-2:#213947;
+    --bg-deep:#191512;
+    --bg-panel:#241E1A;
+    --bg-panel-2:#2D2620;
     --line:rgba(255,255,255,0.09);
-    --amber:#F2A93C;
-    --amber-dark:#D6890F;
-    --amber-text:#3A2404;
-    --text-1:#EDF2F5;
-    --text-2:#A9BAC4;
-    --text-3:#758993;
+    --amber:#EE4D2D;
+    --amber-dark:#C73D21;
+    --amber-text:#FFFFFF;
+    --text-1:#F5F1EE;
+    --text-2:#B9ACA2;
+    --text-3:#8A7C71;
     --success:#3FA66B;
     --success-bg:#1D3A2B;
     --danger:#E1574C;
@@ -47,7 +47,13 @@
   .header{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
   .header h1{font-size:22px; font-weight:600; margin:0; color:var(--text-1);}
   .header .sub{font-size:12px; color:var(--text-3); margin-top:2px;}
-  .clock{font-family:'Oswald',sans-serif; font-size:26px; font-weight:600; color:var(--amber); letter-spacing:0.04em;}
+  .clock{font-family:'Oswald',sans-serif; font-size:26px; font-weight:600; color:var(--amber); letter-spacing:0.04em; line-height:1;}
+  .clock-date{font-size:11px; color:var(--text-2); margin-top:2px; letter-spacing:0.03em;}
+  .brand-mark{
+    display:inline-flex; align-items:center; gap:6px; font-family:'Oswald',sans-serif; font-weight:700; font-size:13px;
+    letter-spacing:0.06em; text-transform:uppercase; color:#EE4D2D; background:rgba(238,77,45,0.12);
+    padding:4px 12px 4px 10px; border-radius:99px; margin-bottom:8px;
+  }
   .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px;}
   .stat{background:var(--bg-panel); border-radius:var(--radius); padding:14px 12px; text-align:center; border:1px solid var(--line);}
   .stat .num{font-family:'Oswald',sans-serif; font-size:28px; font-weight:600; color:var(--amber);}
@@ -104,7 +110,7 @@
   .badge{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; margin-left:6px; text-transform:uppercase;}
   .badge-yes{background:var(--success-bg); color:#9FE0B8;}
   .badge-no{background:var(--danger-bg); color:#F2A6A0;}
-  .badge-wait{background:rgba(242,169,60,0.16); color:var(--amber);}
+  .badge-wait{background:rgba(238,77,45,0.16); color:var(--amber);}
   .done-time{font-size:13px; color:var(--text-2); font-weight:600; white-space:nowrap;}
   .empty{color:var(--text-3); font-size:13px; padding:18px; text-align:center; background:var(--bg-panel); border-radius:12px; border:1px dashed var(--line);}
   .date-filter{display:flex; align-items:center; gap:8px; margin-bottom:18px; flex-wrap:wrap;}
@@ -136,24 +142,28 @@
 </style>
 </head>
 <body>
-<div id="loginScreen" style="position:fixed; inset:0; background:#132029; z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; font-family:'Inter',sans-serif;">
-  <div style="background:#1B2E39; border:1px solid rgba(255,255,255,0.09); border-radius:14px; padding:32px 28px; max-width:340px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.5);">
-    <div style="font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.03em; font-size:20px; font-weight:600; color:#EDF2F5; margin-bottom:4px;">Controle de Motoristas</div>
-    <div style="font-size:12px; color:#758993; margin-bottom:22px;">Faça login para acessar o painel</div>
+<div id="loginScreen" style="position:fixed; inset:0; background:#191512; z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; font-family:'Inter',sans-serif;">
+  <div style="background:#241E1A; border:1px solid rgba(255,255,255,0.09); border-radius:14px; padding:32px 28px; max-width:340px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.5);">
+    <div style="display:inline-flex; align-items:center; gap:6px; font-family:'Oswald',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#EE4D2D; background:rgba(238,77,45,0.12); padding:4px 12px 4px 10px; border-radius:99px; margin-bottom:12px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 8L12 4L20 8V16L12 20L4 16V8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 8L12 12L20 8" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 12V20" stroke="currentColor" stroke-width="1.8"/></svg>
+      SHOPEE SPX
+    </div>
+    <div style="font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.03em; font-size:20px; font-weight:600; color:#F5F1EE; margin-bottom:4px;">Controle de Motoristas</div>
+    <div style="font-size:12px; color:#8A7C71; margin-bottom:22px;">Faça login para acessar o painel</div>
     <div style="margin-bottom:14px;">
-      <label style="display:block; font-size:12px; color:#A9BAC4; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; font-weight:600;">Usuário</label>
+      <label style="display:block; font-size:12px; color:#B9ACA2; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; font-weight:600;">Usuário</label>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="off"
-        style="width:100%; background:#213947; border:1px solid rgba(255,255,255,0.09); color:#EDF2F5; border-radius:8px; padding:12px; font-size:16px; box-sizing:border-box;">
+        style="width:100%; background:#2D2620; border:1px solid rgba(255,255,255,0.09); color:#F5F1EE; border-radius:8px; padding:12px; font-size:16px; box-sizing:border-box;">
     </div>
     <div style="margin-bottom:8px;">
-      <label style="display:block; font-size:12px; color:#A9BAC4; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; font-weight:600;">Senha</label>
+      <label style="display:block; font-size:12px; color:#B9ACA2; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; font-weight:600;">Senha</label>
       <input type="password" id="loginSenha" placeholder="Senha" autocomplete="off"
         onkeydown="if(event.key==='Enter') tentarLogin()"
-        style="width:100%; background:#213947; border:1px solid rgba(255,255,255,0.09); color:#EDF2F5; border-radius:8px; padding:12px; font-size:16px; box-sizing:border-box;">
+        style="width:100%; background:#2D2620; border:1px solid rgba(255,255,255,0.09); color:#F5F1EE; border-radius:8px; padding:12px; font-size:16px; box-sizing:border-box;">
     </div>
     <div id="loginErro" style="display:none; color:#E1574C; font-size:12px; margin-bottom:10px;">Usuário ou senha incorretos.</div>
     <button onclick="tentarLogin()"
-      style="width:100%; padding:16px; border-radius:12px; border:none; background:#F2A93C; color:#3A2404; font-family:'Oswald',sans-serif; font-size:15px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; cursor:pointer; margin-top:8px;">
+      style="width:100%; padding:16px; border-radius:12px; border:none; background:#EE4D2D; color:#FFFFFF; font-family:'Oswald',sans-serif; font-size:15px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; cursor:pointer; margin-top:8px;">
       Entrar
     </button>
   </div>
@@ -162,10 +172,21 @@
 <div class="app">
   <div class="header">
     <div>
+      <div class="brand-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 8L12 4L20 8V16L12 20L4 16V8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M4 8L12 12L20 8" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M12 12V20" stroke="currentColor" stroke-width="1.8"/>
+        </svg>
+        SHOPEE SPX
+      </div>
       <h1>Controle de Motoristas</h1>
       <div class="sub">Entrada e saída - Centro de Distribuição</div>
     </div>
-    <div class="clock" id="clock">--:--</div>
+    <div style="text-align:right;">
+      <div class="clock" id="clock">--:--</div>
+      <div class="clock-date" id="clockDate">--/--/----</div>
+    </div>
   </div>
   <div id="saveBadge" style="text-align:right; font-size:11px; color:var(--text-2); opacity:0; transition:opacity 0.3s; margin-bottom:6px;">Salvo no histórico ✓</div>
   <div id="statusConexao" style="display:none; font-size:12px; padding:10px 14px; border-radius:8px; margin-bottom:14px; line-height:1.5;"></div>
@@ -446,9 +467,11 @@ function nowTimeStr(){
   const d = new Date();
   return pad(d.getHours()) + ':' + pad(d.getMinutes());
 }
+const diasSemana = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
 function updateClock(){
   const d = new Date();
   document.getElementById('clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  document.getElementById('clockDate').textContent = diasSemana[d.getDay()] + ', ' + pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear();
 }
 updateClock();
 setInterval(updateClock, 15000);
@@ -573,7 +596,7 @@ function mostrarStatusConexao(texto, tipo){
   el.textContent = texto;
   if(tipo === 'ok'){ el.style.background = 'var(--success-bg)'; el.style.color = '#9FE0B8'; }
   else if(tipo === 'erro'){ el.style.background = 'var(--danger-bg)'; el.style.color = '#F2A6A0'; }
-  else { el.style.background = 'rgba(242,169,60,0.16)'; el.style.color = 'var(--amber)'; }
+  else { el.style.background = 'rgba(238,77,45,0.16)'; el.style.color = 'var(--amber)'; }
 }
 
 function iniciarSincronizacao(){
