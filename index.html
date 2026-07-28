@@ -210,6 +210,309 @@
     <button class="tab-btn" id="tabBtnItensCarregando" onclick="switchTab('itensCarregando')">Itens sendo carregados</button>
     <button class="tab-btn" id="tabBtnSaida" onclick="switchTab('saida')">Registro de saída</button>
     <button class="tab-btn" id="tabBtnHistorico" onclick="switchTab('historico')">Histórico completo</button>
+    <button class="tab-btn" id="tabBtnAnalises" onclick="switchTab('analises')">Análises</button>
+  </div>
+
+  <div class="view active" id="viewChegada">
+    <div class="card">
+      <h2>Registrar chegada</h2>
+      <div class="field">
+        <label for="placaSelect">Motorista / Placa</label>
+        <select id="placaSelect">
+          <option value="IWF4H66">IWF4H66</option>
+          <option value="AMT9D75">AMT9D75</option>
+          <option value="OUTRO">Outro motorista...</option>
+        </select>
+        <div class="outro-wrap" id="outroWrap">
+          <input type="text" id="placaOutro" placeholder="Digite a placa">
+        </div>
+      </div>
+      <div class="field">
+        <label for="nomeMotorista">Nome do motorista</label>
+        <input type="text" id="nomeMotorista" placeholder="Ex: João da Silva">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="dataChegada">Dia de chegada</label>
+          <input type="date" id="dataChegada">
+        </div>
+        <div class="field">
+          <label for="horaChegada">Hora de chegada <button type="button" class="now-btn" id="btnAgoraChegada">agora</button></label>
+          <input type="time" id="horaChegada">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="doca">Doca <span class="req-tag">obrigatório</span></label>
+          <input type="text" id="doca" placeholder="Ex: 113" required>
+        </div>
+        <div class="field">
+          <label for="responsavel">Responsável pelo registro <span class="opt-tag">opcional</span></label>
+          <input type="text" id="responsavel" placeholder="Seu nome">
+        </div>
+      </div>
+      <div class="field">
+        <label>Chegou com o caminhão carregado?</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" id="btnCarregadoSim" onclick="setCarregado(true)">Sim, carregado</button>
+          <button type="button" class="toggle-btn" id="btnCarregadoNao" onclick="setCarregado(false)">Não, vazio</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="observacao">Observação <span class="opt-tag">opcional</span></label>
+        <textarea id="observacao" placeholder="Qualquer detalhe importante sobre este carregamento"></textarea>
+      </div>
+      <button class="big-btn" onclick="registrarChegada()">Registrar chegada</button>
+    </div>
+
+    <div class="section-title">No pátio agora</div>
+    <div id="listaPatioChegada"></div>
+  </div>
+
+  <div class="view" id="viewItens">
+    <div class="card">
+      <h2>Itens que chegaram no carro</h2>
+      <div class="field">
+        <label for="itensSelect">Motorista no pátio</label>
+        <select id="itensSelect" onchange="carregarItensFormulario()"></select>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="itemManga">Manga <span class="opt-tag">quantidade</span></label>
+          <input type="number" id="itemManga" min="0" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="itemTampa">Tampa <span class="opt-tag">quantidade</span></label>
+          <input type="number" id="itemTampa" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="field">
+        <label for="itemDevices">Devices <span class="opt-tag">quantidade</span></label>
+        <input type="number" id="itemDevices" min="0" placeholder="0">
+      </div>
+      <button class="big-btn" onclick="salvarItens()">Salvar itens</button>
+    </div>
+
+    <div class="section-title">Itens que chegaram (pátio)</div>
+    <div id="listaItensPatio"></div>
+  </div>
+
+  <div class="view" id="viewItensCarregando">
+    <div class="card">
+      <h2>Itens sendo carregados no carro</h2>
+      <div class="field">
+        <label for="itensCarregandoSelect">Motorista no pátio</label>
+        <select id="itensCarregandoSelect" onchange="carregarItensCarregandoFormulario()"></select>
+      </div>
+      <div class="field">
+        <label for="itemCarregandoManga">Manga <span class="opt-tag">quantidade</span></label>
+        <input type="number" id="itemCarregandoManga" min="0" placeholder="0">
+      </div>
+      <div class="field">
+        <label for="itemCarregandoDevices">Devices <span class="opt-tag">quantidade</span></label>
+        <input type="number" id="itemCarregandoDevices" min="0" placeholder="0">
+      </div>
+      <div class="field">
+        <label>Destinos carregados</label>
+        <div class="toggle-group" style="flex-wrap:wrap;">
+          <label class="checkbox-card" id="checkDestinoPELabel" style="min-width:70px;">
+            <input type="checkbox" class="destino-check" value="PE" onchange="marcarDestino(this)">
+            <span>PE</span>
+          </label>
+          <label class="checkbox-card" id="checkDestinoRSLabel" style="min-width:70px;">
+            <input type="checkbox" class="destino-check" value="RS" onchange="marcarDestino(this)">
+            <span>RS</span>
+          </label>
+          <label class="checkbox-card" id="checkDestinoGOLabel" style="min-width:70px;">
+            <input type="checkbox" class="destino-check" value="GO" onchange="marcarDestino(this)">
+            <span>GO</span>
+          </label>
+          <label class="checkbox-card" id="checkDestinoFRANCOLabel" style="min-width:70px;">
+            <input type="checkbox" class="destino-check" value="FRANCO" onchange="marcarDestino(this)">
+            <span>FRANCO</span>
+          </label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Marcação da carga</label>
+        <div class="toggle-group">
+          <label class="checkbox-card" id="checkCrossLabel">
+            <input type="checkbox" id="itemCarregandoCross" onchange="document.getElementById('check    background:var(--bg-deep);
+    color:var(--text-1);
+    padding:20px clamp(16px,4vw,56px) 40px;
+    border-radius:0;
+    width:100%;
+    max-width:1100px;
+    min-height:100vh;
+    margin:0 auto;
+  }
+  h1,h2,.disp{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.03em;}
+  .header{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
+  .header h1{font-size:22px; font-weight:600; margin:0; color:var(--text-1);}
+  .header .sub{font-size:12px; color:var(--text-3); margin-top:2px;}
+  .clock{font-family:'Oswald',sans-serif; font-size:26px; font-weight:600; color:var(--amber); letter-spacing:0.04em; line-height:1;}
+  .clock-date{font-size:11px; color:var(--text-2); margin-top:2px; letter-spacing:0.03em;}
+  .brand-mark{
+    display:inline-flex; align-items:center; gap:6px; font-family:'Oswald',sans-serif; font-weight:700; font-size:13px;
+    letter-spacing:0.06em; text-transform:uppercase; color:#EE4D2D; background:rgba(238,77,45,0.12);
+    padding:4px 12px 4px 10px; border-radius:99px; margin-bottom:8px;
+  }
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px;}
+  .stat{background:var(--bg-panel); border-radius:var(--radius); padding:14px 12px; text-align:center; border:1px solid var(--line);}
+  .stat .num{font-family:'Oswald',sans-serif; font-size:28px; font-weight:600; color:var(--amber);}
+  .stat .lbl{font-size:11px; color:var(--text-2); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px;}
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+  .tab-btn{
+    background:transparent; border:none; color:var(--text-2); font-family:'Oswald',sans-serif; font-size:13px;
+    text-transform:uppercase; letter-spacing:0.04em; font-weight:600; padding:10px 16px; cursor:pointer;
+    border-bottom:2.5px solid transparent; margin-bottom:-1px;
+  }
+  .tab-btn.active{color:var(--amber); border-bottom-color:var(--amber);}
+  .view{display:none;}
+  .view.active{display:block;}
+  .card{background:var(--bg-panel); border-radius:14px; padding:18px; margin-bottom:16px; border:1px solid var(--line);}
+  .card h2{font-size:15px; font-weight:600; margin:0 0 14px; color:var(--text-1);}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; color:var(--text-2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; font-weight:600;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  select,input[type=date],input[type=time],input[type=text],textarea{
+    width:100%; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-1);
+    border-radius:8px; padding:12px 12px; font-size:16px; font-family:'Inter',sans-serif;
+  }
+  textarea{resize:vertical; min-height:44px; font-size:14px;}
+  select:focus,input:focus,textarea:focus{outline:2px solid var(--amber); outline-offset:1px;}
+  .now-btn{background:transparent; border:1px solid var(--line); color:var(--text-2); font-size:11px; padding:5px 9px; border-radius:6px; margin-left:8px; cursor:pointer;}
+  .now-btn:hover{border-color:var(--amber); color:var(--amber);}
+  .opt-tag{font-size:10px; color:var(--text-3); text-transform:none; font-weight:400; letter-spacing:0; margin-left:6px;}
+  .req-tag{font-size:10px; color:var(--danger); text-transform:none; font-weight:600; letter-spacing:0; margin-left:6px;}
+  .toggle-group{display:flex; gap:10px;}
+  .toggle-btn{
+    flex:1; padding:16px 8px; border-radius:10px; border:2px solid var(--line); background:var(--bg-panel-2);
+    color:var(--text-2); font-size:15px; font-weight:600; cursor:pointer; text-align:center; font-family:'Inter',sans-serif;
+  }
+  .toggle-btn.active-yes{border-color:var(--success); background:var(--success-bg); color:#9FE0B8;}
+  .toggle-btn.active-no{border-color:var(--danger); background:var(--danger-bg); color:#F2A6A0;}
+  .checkbox-card{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:16px 8px;
+    border-radius:10px; border:2px solid var(--line); background:var(--bg-panel-2); cursor:pointer;
+    font-size:15px; font-weight:600; color:var(--text-2);
+  }
+  .checkbox-card input{width:18px; height:18px; accent-color:var(--amber); cursor:pointer;}
+  .checkbox-card:has(input:checked), .checkbox-card.marcado{border-color:var(--amber); background:rgba(238,77,45,0.12); color:var(--amber);}
+  .big-btn{
+    width:100%; padding:18px; border-radius:12px; border:none; background:var(--amber); color:var(--amber-text);
+    font-family:'Oswald',sans-serif; font-size:17px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase;
+    cursor:pointer; margin-top:6px;
+  }
+  .big-btn:hover{background:var(--amber-dark);}
+  .outro-wrap{margin-top:8px; display:none;}
+  .section-title{font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-2); font-weight:700; margin:22px 0 10px;}
+  .entry{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
+    display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; cursor:default;
+  }
+  .entry.clickable{cursor:pointer;}
+  .entry.clickable:hover{border-color:var(--amber);}
+  .entry-left{display:flex; flex-direction:column; gap:4px;}
+  .plate{font-family:'Oswald',sans-serif; font-size:17px; font-weight:600; letter-spacing:0.04em;}
+  .meta{font-size:12px; color:var(--text-2);}
+  .obs{font-size:12px; color:var(--text-3); margin-top:2px; font-style:italic;}
+  .badge{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; margin-left:6px; text-transform:uppercase;}
+  .badge-yes{background:var(--success-bg); color:#9FE0B8;}
+  .badge-no{background:var(--danger-bg); color:#F2A6A0;}
+  .badge-wait{background:rgba(238,77,45,0.16); color:var(--amber);}
+  .done-time{font-size:13px; color:var(--text-2); font-weight:600; white-space:nowrap;}
+  .empty{color:var(--text-3); font-size:13px; padding:18px; text-align:center; background:var(--bg-panel); border-radius:12px; border:1px dashed var(--line);}
+  .date-filter{display:flex; align-items:center; gap:8px; margin-bottom:18px; flex-wrap:wrap;}
+  .date-filter label{font-size:12px; color:var(--text-2); text-transform:uppercase; letter-spacing:0.04em;}
+  .date-filter input,.date-filter select{width:auto; flex:none;}
+  .today-btn{background:transparent; border:1px solid var(--line); color:var(--text-2); font-size:12px; padding:9px 12px; border-radius:8px; cursor:pointer;}
+  .today-btn:hover{border-color:var(--amber); color:var(--amber);}
+  .hist-filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:flex-end;}
+  .hist-filters .field{margin-bottom:0; min-width:140px;}
+  .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:12px;}
+  table{width:100%; border-collapse:collapse; font-size:13px; min-width:900px;}
+  thead th{
+    background:var(--bg-panel-2); text-align:left; padding:10px 12px; font-family:'Oswald',sans-serif;
+    text-transform:uppercase; letter-spacing:0.03em; font-size:11px; color:var(--text-2); font-weight:600;
+  }
+  tbody td{padding:10px 12px; border-top:1px solid var(--line); color:var(--text-1); vertical-align:top;}
+  tbody tr:nth-child(even){background:rgba(255,255,255,0.02);}
+  .hist-count{font-size:12px; color:var(--text-3); margin-bottom:10px;}
+  @media(max-width:420px){.stats{grid-template-columns:1fr 1fr;} .stats .stat:last-child{grid-column:span 2;}}
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(8,14,18,0.72); z-index:1000;
+    align-items:center; justify-content:center; padding:16px;
+  }
+  .modal-box{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:22px;
+    max-width:360px; width:100%; font-family:'Inter',sans-serif; color:var(--text-1);
+    box-shadow:0 12px 40px rgba(0,0,0,0.5);
+  }
+</style>
+</head>
+<body>
+<div id="loginScreen" style="position:fixed; inset:0; background:#191512; z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; font-family:'Inter',sans-serif;">
+  <div style="background:#241E1A; border:1px solid rgba(255,255,255,0.09); border-radius:14px; padding:32px 28px; max-width:340px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.5);">
+    <div style="display:inline-flex; align-items:center; gap:6px; font-family:'Oswald',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#EE4D2D; background:rgba(238,77,45,0.12); padding:4px 12px 4px 10px; border-radius:99px; margin-bottom:12px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 8L12 4L20 8V16L12 20L4 16V8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 8L12 12L20 8" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 12V20" stroke="currentColor" stroke-width="1.8"/></svg>
+      SHOPEE SPX
+    </div>
+    <div style="font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.03em; font-size:20px; font-weight:600; color:#F5F1EE; margin-bottom:4px;">Controle de Motoristas</div>
+    <div style="font-size:12px; color:#8A7C71; margin-bottom:22px;">Faça login para acessar o painel</div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block; font-size:12px; color:#B9ACA2; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; font-weight:600;">Usuário</label>
+      <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="off"
+        style="width:100%; background:#2D2620; border:1px solid rgba(255,255,255,0.09); color:#F5F1EE; border-radius:8px; padding:12px; font-size:16px; box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:8px;">
+      <label style="display:block; font-size:12px; color:#B9ACA2; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; font-weight:600;">Senha</label>
+      <input type="password" id="loginSenha" placeholder="Senha" autocomplete="off"
+        onkeydown="if(event.key==='Enter') tentarLogin()"
+        style="width:100%; background:#2D2620; border:1px solid rgba(255,255,255,0.09); color:#F5F1EE; border-radius:8px; padding:12px; font-size:16px; box-sizing:border-box;">
+    </div>
+    <div id="loginErro" style="display:none; color:#E1574C; font-size:12px; margin-bottom:10px;">Usuário ou senha incorretos.</div>
+    <button onclick="tentarLogin()"
+      style="width:100%; padding:16px; border-radius:12px; border:none; background:#EE4D2D; color:#FFFFFF; font-family:'Oswald',sans-serif; font-size:15px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; cursor:pointer; margin-top:8px;">
+      Entrar
+    </button>
+  </div>
+</div>
+
+<div class="app">
+  <div class="header">
+    <div>
+      <div class="brand-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 8L12 4L20 8V16L12 20L4 16V8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M4 8L12 12L20 8" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M12 12V20" stroke="currentColor" stroke-width="1.8"/>
+        </svg>
+        SHOPEE SPX
+      </div>
+      <h1>Controle de Motoristas</h1>
+      <div class="sub">Entrada e saída - Centro de Distribuição</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="clock" id="clock">--:--</div>
+      <div class="clock-date" id="clockDate">--/--/----</div>
+    </div>
+  </div>
+  <div id="saveBadge" style="text-align:right; font-size:11px; color:var(--text-2); opacity:0; transition:opacity 0.3s; margin-bottom:6px;">Salvo no histórico ✓</div>
+  <div id="statusConexao" style="display:none; font-size:12px; padding:10px 14px; border-radius:8px; margin-bottom:14px; line-height:1.5;"></div>
+
+  <div class="stats">
+    <div class="stat"><div class="num" id="statPatio">0</div><div class="lbl">No pátio agora</div></div>
+    <div class="stat"><div class="num" id="statHoje">0</div><div class="lbl">Chegadas hoje</div></div>
+    <div class="stat"><div class="num" id="statConcluidos">0</div><div class="lbl">Liberados hoje</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtnChegada" onclick="switchTab('chegada')">Registro de chegada</button>
+    <button class="tab-btn" id="tabBtnItens" onclick="switchTab('itens')">Itens que chegaram no carro</button>
+    <button class="tab-btn" id="tabBtnItensCarregando" onclick="switchTab('itensCarregando')">Itens sendo carregados</button>
+    <button class="tab-btn" id="tabBtnSaida" onclick="switchTab('saida')">Registro de saída</button>
+    <button class="tab-btn" id="tabBtnHistorico" onclick="switchTab('historico')">Histórico completo</button>
   </div>
 
   <div class="view active" id="viewChegada">
